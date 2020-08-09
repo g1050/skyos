@@ -9,6 +9,10 @@
 
 ;------------------------
 ;vstart 表示起始地址编译为0x7c00
+;0x7c00是因为最开始是43kB的内存,所以选择把MBR放在了最后一个KB
+;MBR本身大小是512KB,但是还有为其开辟相应的栈空间
+;所以预留了1KB的空间
+
 SECTION MBR vstart=0x7c00
     ;------------------------
     mov ax,cs ;ax = 0
@@ -20,33 +24,36 @@ SECTION MBR vstart=0x7c00
 
     ;------------------------
     ;清屏
-    mov ax,0x600
-    mov bx,0x700
-    mov cx,0
-    mov dx,0x184f
+    mov ax,0x600    ;AH高八位设置为6号
+    ;其他寄存器做相应的设置
+    mov bx,0x700    ;BH上卷行属性
+    mov cx,0        ;CL,CH (X,Y)窗口左上角的位置
+    mov dx,0x184f   ;DL,DH (X,Y)右下角的位置
 
-    int 0x10
+    int 0x10        ;调用int0x10中断
+
     ;------------------------
     ;打印前的准备工作
-    mov ah,3
-    mov bh,0
+    mov ah,3        ;3号子功能,读光标的位置
+    mov bh,0        ;设置页号
 
     int 0x10
+
     ;------------------------
     ;打印字符
-    mov ax,message
-    mov bp,ax
+    mov ax,message  ;把message地址存入ax
+    mov bp,ax       ;
 
     mov cx,5
-    mov ax,0x1301
-    mov bx,0x2
+    mov ax,0x1301   ;13号功能打印字符串
+    mov bx,0x2      ;设置页号和字符属性
     int 0x10
     ;------------------------
 
-    jmp $
+    jmp $           ;这是个死循环吧
 
-    message db "1 MBR "
-    times 510-($-$$) db 0
+    message db "Hellosky-os!!!"
+    times 510-($-$$) db 0   ;重复填充0
 
     ;0扇区的最后两个字节存放0x55,0xaa
     db 0x55,0xaa
